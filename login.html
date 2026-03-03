@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MDX Study Buddy - Login</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f4f4;
+        }
+
+        .header {
+            background: #d50032;
+            color: white;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            width: 350px;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #d50032;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">MDX Study Buddy</div>
+
+<div class="container">
+    <div class="login-box">
+        <h2>Student Login</h2>
+        <input type="text" id="studentId" placeholder="Student ID">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Sign In</button>
+        <div id="error" class="error"></div>
+    </div>
+</div>
+
+<script>
+    const users = {
+        "kj515": "1234",
+        "mj945": "2345",
+        "rt720": "3456",
+        "lk909": "4567",
+        "hp787": "5678"
+    };
+
+    function login() {
+        const id = document.getElementById("studentId").value;
+        const pass = document.getElementById("password").value;
+
+        if (users[id] && users[id] === pass) {
+            localStorage.setItem("loggedInUser", id);
+            window.location.href = "tb.html";
+        } else {
+            document.getElementById("error").innerText = "Invalid ID or Password";
+        }
+    }
+</script>
+
+</body>
+</html>

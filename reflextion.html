@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDX Study Buddy - Weekly Reflection</title>
+<style>
+body { background:#f5f7fb; font-family:Arial, Helvetica, sans-serif; }
+.container { max-width:900px; margin:40px auto; }
+.card { background:#fff; padding:20px; margin-bottom:20px; border-radius:8px; box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+.progress-bar { height:20px; background:#e5e7eb; border-radius:10px; overflow:hidden; }
+.progress-fill { height:100%; background:#22c55e; width:0%; transition:width 0.5s ease; }
+</style>
+</head>
+<body>
+
+<div class="header" style="background:#d50032;color:white;padding:20px;font-size:22px;display:flex;justify-content:space-between;align-items:center;">
+    MDX Study Buddy
+    <a href="tb.html" style="color:white;text-decoration:none;">Back to Planner</a>
+</div>
+
+<div class="container">
+<div class="card">
+<h1>🧠 End of Week Reflection</h1>
+<p>Modules:</p>
+<ul>
+<li><strong>CST1133</strong> – Foundations of Computing</li>
+<li><strong>CST1140</strong> – Systems & Architecture</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>Mental Health Survey</h2>
+<label>Overall Mood (1-10)</label>
+<input type="range" min="1" max="10" id="mood">
+<label>Stress Level</label>
+<select id="stress">
+<option>Very Low</option><option>Low</option><option>Moderate</option><option>High</option><option>Very High</option>
+</select>
+<label>Energy Levels (1-10)</label>
+<input type="range" min="1" max="10" id="energy">
+<label>What affected your mood this week?</label>
+<textarea id="reflection"></textarea>
+<button onclick="submitSurvey()">Save Reflection</button>
+</div>
+
+<div class="card">
+<h2>📊 Productivity Analysis</h2>
+<p>Total Tasks This Week: <strong id="totalTasks">0</strong></p>
+<p>Completed Tasks: <strong id="completedTasks">0</strong></p>
+<button onclick="analyze()">Generate AI Analysis</button>
+</div>
+
+<div class="card" id="results" style="display:none;">
+<h2>Weekly Summary</h2>
+<p id="summary"></p>
+<div class="progress-bar">
+  <div class="progress-fill" id="progressFill"></div>
+</div>
+<h3>AI Insight</h3>
+<p id="aiInsight"></p>
+<h3>Recommendations</h3>
+<p id="recommendations"></p>
+</div>
+</div>
+
+<script>
+let username = localStorage.getItem("loggedInUser");
+if(!username){ alert("No user logged in!"); window.location.href="login.html"; }
+
+let storedTasks = JSON.parse(localStorage.getItem(`mdxTasks_${username}`)) || [];
+
+// Week start (Monday)
+function getWeekStart(date){
+    let d = new Date(date);
+    let day=d.getDay();
+    let diff=(day===0?-6:1)-day;
+    d.setDate(d.getDate()+diff);
+    return d.toISOString().split("T")[0];
+}
+
+let thisWeek = getWeekStart(new Date());
+let lastWeek = new Date(); lastWeek.setDate(new Date().getDate()-7); lastWeek = getWeekStart(lastWeek);
+
+// Tasks for this week
+let weeklyTasks = storedTasks.filter(t=>{ let due=new Date(t.date); return due>=new Date(thisWeek) && due<new Date(thisWeek).setDate(new Date(thisWeek).getDate()+7);});
+let total=weeklyTasks.length;
+let completed=weeklyTasks.filter(t=>t.completed).length;
+document.getElementById("totalTasks").innerText=total;
+document.getElementById("completedTasks").innerText=completed;
+
+// Load previous week's reflection
+let prevReflectionKey = `weeklyReflection_${username}_${lastWeek}`;
+let prevReflection = JSON.parse(localStorage.getItem(prevReflectionKey));
+if(prevReflection){
+    document.getElementById("mood").value = prevReflection.mood;
+    document.getElementById("stress").value = prevReflection.stress;
+    document.getElementById("energy").value = prevReflection.energy;
+    document.getElementById("reflection").value = prevReflection.reflection;
+}
+
+function submitSurvey(){
+    let data = {
+        mood: document.getElementById("mood").value,
+        stress: document.getElementById("stress").value,
+        energy: document.getElementById("energy").value,
+        reflection: document.getElementById("reflection").value
+    };
+    let key = `weeklyReflection_${username}_${thisWeek}`;
+    localStorage.setItem(key, JSON.stringify(data));
+    alert("Reflection saved for this week!");
+}
+
+function analyze(){
+    if(total===0){ alert("No tasks found this week."); return; }
+    const mood=parseInt(document.getElementById("mood").value);
+    const stress=document.getElementById("stress").value;
+    const energy=parseInt(document.getElementById("energy").value);
+    const completionRate=Math.round((completed/total)*100);
+
+    document.getElementById("results").style.display="block";
+    document.getElementById("summary").innerHTML=`You completed <strong>${completed}</strong> out of <strong>${total}</strong> tasks (${completionRate}%).
+    Mood: ${mood}/10 | Energy: ${energy}/10 | Stress: ${stress}`;
+    document.getElementById("progressFill").style.width=completionRate+"%";
+
+    let insight="", rec="";
+    if(mood>=7 && completionRate>=70){ insight="Strong correlation between positive mood and high productivity."; rec="Keep your current study routine and maintain balance."; }
+    else if(stress==="High"||stress==="Very High"){ insight="High stress likely reduced efficiency."; rec="Schedule lighter tasks on stressful days and prioritise breaks."; }
+    else if(completionRate<50){ insight="Low completion rate suggests workload imbalance."; rec="Break larger tasks into smaller milestones."; }
+    else{ insight="Balanced productivity with moderate well-being."; rec="Improve energy management to increase performance."; }
+
+    document.getElementById("aiInsight").innerText=insight;
+    document.getElementById("recommendations").innerText=rec;
+}
+</script>
+</body>
+</html>

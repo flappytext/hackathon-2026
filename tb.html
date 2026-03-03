@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDX Study Buddy - Smart Multi User Planner</title>
+
+<style>
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    background: linear-gradient(to right, #f4f4f4, #ffe6ec);
+}
+
+.header {
+    background:#d50032;
+    color:white;
+    padding:20px;
+    font-size:22px;
+    font-weight:bold;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.container {
+    padding:20px;
+    max-width:1200px;
+    margin:auto;
+}
+
+.card {
+    background:white;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:20px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.1);
+}
+
+input, select, button {
+    padding:8px;
+    margin:5px;
+}
+
+button {
+    background:#d50032;
+    color:white;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+}
+
+.calendar {
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:10px;
+}
+
+.day {
+    background:#f9f9f9;
+    padding:8px;
+    border-radius:8px;
+    min-height:220px;
+}
+
+.task, .study-session {
+    padding:6px;
+    margin:6px 0;
+    border-radius:6px;
+    font-size:13px;
+    cursor:pointer;
+}
+
+.task { background:#d0e6ff; }
+.study-session { background:#fff3cd; }
+
+.completed {
+    background:#4CAF50 !important;
+    color:white;
+}
+
+.ai-output {
+    background:#eef6ff;
+    padding:10px;
+    border-radius:6px;
+    margin-top:10px;
+    white-space:pre-line;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div>MDX Study Buddy 🤖</div>
+    <div>
+        User: <span id="currentUser"></span>
+        <button onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h3>Add Task</h3>
+<input type="text" id="taskName" placeholder="Task name">
+<select id="taskModule">
+<option value="CST1133">CST1133</option>
+<option value="CST1140">CST1140</option>
+</select>
+<input type="date" id="taskDate">
+<button onclick="addTask()">Add Task</button>
+
+<ul id="taskList"></ul>
+
+<button onclick="generatePlanner()">Generate Study Planner</button>
+<a href="weekly.html"><button>Weekly Reflection</button></a>
+</div>
+
+<div class="card">
+<h3>🤖 Interactive AI Study Planner</h3>
+
+<label>Study Hours Per Day</label>
+<input type="number" id="hoursPerDay" value="2">
+
+<label>Study Style</label>
+<select id="studyStyle">
+<option value="balanced">Balanced</option>
+<option value="intensive">Intensive</option>
+<option value="light">Light</option>
+</select>
+
+<label>Energy Level</label>
+<select id="energyLevel">
+<option value="high">High</option>
+<option value="medium">Medium</option>
+<option value="low">Low</option>
+</select>
+
+<button onclick="generateAIPlan()">Generate AI Plan</button>
+
+<div id="aiOutput" class="ai-output"></div>
+</div>
+
+<div id="calendarContainer" style="display:none;">
+<h3>📅 Weekly Planner</h3>
+<div class="calendar" id="calendar"></div>
+<div id="progress"></div>
+</div>
+
+</div>
+
+<script>
+
+// ---------------- USER ----------------
+let username = localStorage.getItem("loggedInUser");
+if(!username) window.location.href="login.html";
+document.getElementById("currentUser").innerText = username;
+
+// ---------------- STORAGE ----------------
+function getTasks(){
+    return JSON.parse(localStorage.getItem(`mdxTasks_${username}`)) || [];
+}
+
+function saveTasks(tasks){
+    localStorage.setItem(`mdxTasks_${username}`, JSON.stringify(tasks));
+}
+
+let tasks = getTasks();
+
+// ---------------- LOGOUT ----------------
+function logout(){
+    saveWeeklySnapshot();
+    localStorage.removeItem("loggedInUser");
+    window.location.href="login.html";
+}
+
+// ---------------- ADD TASK ----------------
+function addTask(){
+
+    const name=document.getElementById("taskName").value.trim();
+    const module=document.getElementById("taskModule").value;
+    const date=document.getElementById("taskDate").value;
+
+    if(!name || !date){
+        alert("Enter task and date");
+        return;
+    }
+
+    tasks = getTasks();
+
+    tasks.push({
+        id: Date.now(),
+        name,
+        module,
+        date,
+        completed:false
+    });
+
+    saveTasks(tasks);
+    renderAll();
+
+    document.getElementById("taskName").value="";
+    document.getElementById("taskDate").value="";
+}
+
+// ---------------- TOGGLE ----------------
+function toggleTask(id){
+
+    tasks = getTasks();
+    const task = tasks.find(t=>t.id===id);
+    if(!task) return;
+
+    task.completed = !task.completed;
+
+    saveTasks(tasks);
+    renderAll();
+}
+
+// ---------------- RENDER ----------------
+function renderAll(){
+    tasks = getTasks();
+    renderList();
+    updateProgress();
+
+    if(document.getElementById("calendarContainer").style.display === "block"){
+        renderCalendar();
+    }
+}
+
+function renderList(){
+
+    const list=document.getElementById("taskList");
+    list.innerHTML="";
+
+    tasks.forEach(task=>{
+        const li=document.createElement("li");
+        li.innerText=`${task.module} | ${task.name} (Due: ${task.date})`;
+        if(task.completed) li.classList.add("completed");
+        li.onclick=()=>toggleTask(task.id);
+        list.appendChild(li);
+    });
+}
+
+// ---------------- AI TEXT PLAN ----------------
+function generateAIPlan(){
+
+    tasks = getTasks();
+
+    if(tasks.length===0){
+        alert("Add tasks first.");
+        return;
+    }
+
+    const hours=document.getElementById("hoursPerDay").value;
+    const style=document.getElementById("studyStyle").value;
+    const energy=document.getElementById("energyLevel").value;
+
+    let text="AI Personalised Plan:\n\n";
+
+    tasks.forEach(task=>{
+        const today=new Date();
+        const due=new Date(task.date);
+        const days=Math.ceil((due-today)/(1000*60*60*24));
+
+        if(days<=0){
+            text+=`⚠ ${task.name} overdue. Immediate focus.\n\n`;
+        } else {
+            text+=`📘 ${task.module} - ${task.name}\n`;
+            text+=`Due in ${days} days\n`;
+            text+=`Study ${hours} hrs/day | Style: ${style} | Energy: ${energy}\n\n`;
+        }
+    });
+
+    document.getElementById("aiOutput").innerText=text;
+}
+
+// ---------------- SMART SESSIONS (FIXED) ----------------
+function generateSmartSessions(){
+
+    tasks = getTasks();
+    const today = new Date();
+    let sessions = [];
+    let sessionSet = new Set();
+
+    tasks.forEach(task => {
+
+        const due = new Date(task.date);
+        const diff = Math.ceil((due - today)/(1000*60*60*24));
+
+        if(diff <= 1) return; // no session on due date or tomorrow
+
+        let count = diff > 7 ? 3 : 2;
+        let gap = Math.floor(diff / (count + 1));
+
+        for(let i = 1; i <= count; i++){
+
+            let d = new Date(due);
+            d.setDate(due.getDate() - (i * gap));
+
+            const sessionDate = d.toISOString().split("T")[0];
+
+            if(sessionDate === task.date) continue;
+
+            const key = task.id + "_" + sessionDate;
+
+            if(!sessionSet.has(key)){
+                sessionSet.add(key);
+                sessions.push({
+                    id: task.id,
+                    module: task.module,
+                    name: task.name,
+                    date: sessionDate
+                });
+            }
+        }
+    });
+
+    return sessions;
+}
+
+// ---------------- PLANNER ----------------
+function generatePlanner(){
+    document.getElementById("calendarContainer").style.display="block";
+    renderCalendar();
+    updateProgress();
+}
+
+function renderCalendar(){
+
+    tasks = getTasks();
+    const calendar=document.getElementById("calendar");
+    calendar.innerHTML="";
+
+    const sessions=generateSmartSessions();
+    const today=new Date();
+
+    for(let i=0;i<7;i++){
+
+        let current=new Date();
+        current.setDate(today.getDate()+i);
+        const dateStr=current.toISOString().split("T")[0];
+
+        let dayDiv=document.createElement("div");
+        dayDiv.className="day";
+        dayDiv.innerHTML="<strong>"+dateStr+"</strong>";
+
+        tasks.forEach(task=>{
+            if(task.date===dateStr){
+                let div=document.createElement("div");
+                div.className="task";
+                if(task.completed) div.classList.add("completed");
+                div.innerText="📝 "+task.name;
+                div.onclick=()=>toggleTask(task.id);
+                dayDiv.appendChild(div);
+            }
+        });
+
+        sessions.forEach(s=>{
+            if(s.date===dateStr){
+                let div=document.createElement("div");
+                div.className="study-session";
+                div.innerText="📘 Study "+s.name;
+                dayDiv.appendChild(div);
+            }
+        });
+
+        calendar.appendChild(dayDiv);
+    }
+}
+
+// ---------------- PROGRESS ----------------
+function updateProgress(){
+    const done=tasks.filter(t=>t.completed).length;
+    document.getElementById("progress").innerText=
+    "Completed: "+done+" / "+tasks.length;
+}
+
+// ---------------- WEEKLY SNAPSHOT ----------------
+function getWeekKey(){
+    const now=new Date();
+    const week=Math.floor(now.getTime()/(7*24*60*60*1000));
+    return `weeklyData_${username}_week_${week}`;
+}
+
+function saveWeeklySnapshot(){
+    const key=getWeekKey();
+    const snapshot={
+        date:new Date().toISOString(),
+        tasks:getTasks()
+    };
+    localStorage.setItem(key, JSON.stringify(snapshot));
+}
+
+saveWeeklySnapshot();
+renderAll();
+
+</script>
+
+</body>
+</html>

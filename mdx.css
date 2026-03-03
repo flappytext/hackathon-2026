@@ -1,0 +1,99 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* HEADER */
+.header {
+    background-color: #EE2F35;
+    display: flex;
+    align-items: center;
+    padding: 20px 60px;
+}
+
+/* Logo */
+.logo img {
+    height: 60px;
+    width: auto;
+}
+
+/* Center title */
+.header-title {
+    flex: 1;
+    text-align: center;
+    color: white;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+/* Spacer (empty div) */
+.header-spacer {
+    width: 60px;
+}
+
+/* Login Button */
+.login-btn {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.login-btn:hover {
+    text-decoration: underline;
+}
+
+/* HERO SECTION */
+.hero {
+    background-color: white;
+    height: 85vh;
+    display: flex;
+    align-items: center;
+    padding-left: 80px;
+}
+
+/* Hero Text */
+.hero-content h1 {
+    font-size: 52px;
+    font-weight: 700;
+    color: black;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.hero-content p {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+/* BUTTON */
+.cta-btn {
+    background-color: #00a6b4;
+    color: white;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.cta-btn:hover {
+    background-color: #008c99;
+}
+
+/* FOOTER */
+.footer {
+    background-color: #d9d9d9;
+    text-align: center;
+    padding: 15px;
+    font-size: 14px;
+    color: #333;
+}
